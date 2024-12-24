@@ -1,21 +1,28 @@
 import React from "react";
-// import Login from "./components/login"; 
-// import Signup from "./components/signup"; 
- import Todo from "./components/todo"
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Signup from "./components/signup";
+import Login from "./components/login";
+import TodoApp from "./components/todo";
+import PrivateRoute from "./config/PrivateRoute";
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {/* <Route path="/" element={<Navigate to="/login" replace />} />
+    
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Navigate to="/signup" replace />} />
-        <Route path="/signup" element={<Signup />} /> */}
-        <Route path="/" element={<Navigate to="/todo" replace />} />
-         <Route path="/todo" element={<Todo />} />
+        <Route
+          path="/todos"
+          element={
+            <PrivateRoute>
+              <TodoApp />
+            </PrivateRoute>
+          }
+        />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 };
 

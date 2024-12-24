@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input, Button, List, Modal } from "antd";
 import { PlusCircleOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const App = () => {
@@ -8,20 +9,44 @@ const App = () => {
   const [newTodo, setNewTodo] = useState("");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [currentTodo, setCurrentTodo] = useState({});
+  const navigate = useNavigate();
 
   const fetchTodos = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/todos");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login"); 
+        return;
+      }
+
+      const response = await axios.get("http://localhost:5000/api/todos", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setTodos(response.data);
     } catch (error) {
       console.error("Error fetching todos:", error);
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem("token"); 
+        navigate("/login"); 
+      }
     }
   };
 
   const addTodo = async () => {
     if (newTodo.trim()) {
       try {
-        const response = await axios.post("http://localhost:5000/api/todos", { text: newTodo });
+        const token = localStorage.getItem("token");
+        const response = await axios.post(
+          "http://localhost:5000/api/todos",
+          { text: newTodo },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         setTodos([...todos, response.data]);
         setNewTodo("");
       } catch (error) {
@@ -32,7 +57,12 @@ const App = () => {
 
   const deleteTodo = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/todos/${id}`);
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/todos/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setTodos(todos.filter((todo) => todo._id !== id));
     } catch (error) {
       console.error("Error deleting todo:", error);
@@ -47,10 +77,21 @@ const App = () => {
   const editTodo = async () => {
     if (currentTodo.text.trim()) {
       try {
-        const response = await axios.put(`http://localhost:5000/api/todos/${currentTodo._id}`, {
-          text: currentTodo.text,
-        });
-        setTodos(todos.map((todo) => (todo._id === currentTodo._id ? response.data : todo)));
+        const token = localStorage.getItem("token");
+        const response = await axios.put(
+          `http://localhost:5000/api/todos/${currentTodo._id}`,
+          { text: currentTodo.text },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setTodos(
+          todos.map((todo) =>
+            todo._id === currentTodo._id ? response.data : todo
+          )
+        );
         setIsEditModalVisible(false);
       } catch (error) {
         console.error("Error editing todo:", error);
@@ -58,23 +99,38 @@ const App = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token"); 
+    navigate("/login"); 
+  };
+
   useEffect(() => {
     fetchTodos();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-bl from-indigo-900 via-purple-800 to-pink-700 flex items-center justify-center py-10 px-6">
+    <div className="min-h-screen bg-gradient-to-br from-teal-500 via-indigo-500 to-purple-700 flex items-center justify-center py-10 px-6">
       <div className="bg-gradient-to-br from-white via-gray-100 to-gray-50 shadow-2xl rounded-2xl p-10 w-full max-w-2xl transform transition-all hover:scale-105">
-        <h1 className="text-4xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-500 mb-10">
-          🚀 Mern Stack To-Do App
-        </h1>
+        <div className="flex justify-between items-center mb-5">
+          <h1 className="text-4xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-500">
+            🚀 Mern Stack To-Do App
+          </h1>
+          <Button
+            type="primary"
+            danger
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg px-4 py-2 shadow"
+          >
+            Logout
+          </Button>
+        </div>
 
         <div className="flex gap-4 mb-10">
           <Input
             value={newTodo}
             onChange={(e) => setNewTodo(e.target.value)}
             placeholder="What needs to be done?"
-            className="flex-1 p-4 border-2 border-purple-300 rounded-xl shadow-inner focus:outline-none focus:ring-4 focus:ring-purple-500"
+            className="flex-1 p-4 border-2 border-purple-300 rounded-xl shadow-inner focus:outline-none focus:ring-4 focus:ring-teal-500"
           />
           <Button
             type="primary"
@@ -132,7 +188,7 @@ const App = () => {
           value={currentTodo.text}
           onChange={(e) => setCurrentTodo({ ...currentTodo, text: e.target.value })}
           placeholder="Update your task"
-          className="border border-purple-300 rounded-lg p-4 focus:outline-none focus:ring-4 focus:ring-purple-500"
+          className="border border-purple-300 rounded-lg p-4 focus:outline-none focus:ring-4 focus:ring-teal-500"
         />
       </Modal>
     </div>
